@@ -3,19 +3,20 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "nspyre-template"
-version = "1.0"
+name = "largo-nspyre"
+version = "0.1"
 license = "MIT"
-description = "An nspyre experiment template."
+description = "An adapted nspyre template for the LARGO experiment."
 authors = [
-	"Jacob Feder <jacobsfeder@gmail.com>",
+	"Jacob Feder <jacobsfeder@gmail.com>", 
+	"Antoni Wellisz <awwellisz@gmail.com>",
 ]
 maintainers = [
-	"Jacob Feder <jacobsfeder@gmail.com>"
+	"Antoni Wellisz <awwellisz@gmail.com>"
 ]
 readme = "README.md"
-repository = "https://github.com/nspyre-org/template"
-packages = [{include = "template", from = "src"}]
+repository = "https://github.com/awellisz/LARGO-nspyre"
+packages = [{include = "largo", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -23,4 +24,4 @@ numpy = "^1.23"
 nspyre = "^0.6"
 
 [tool.poetry.scripts]
-template = 'template.gui.app:main'
+largo = 'largo.gui.app:main'
