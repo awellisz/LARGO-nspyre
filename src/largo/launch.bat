@@ -14,7 +14,7 @@ set CURDIR = %CD%
 REM necessary if activating base environment (not really needed here)
 if %ENVNAME%==base (SET ENVPATH=%CONDAPATH%) else (SET ENVPATH=%CONDAPATH%\envs\%ENVNAME%)
 
-start "inserv" cmd /k "cd %CURDIR% && call %CONDAPATH%\Scripts\activate.bat %ENVPATH% && python drivers\remote_inserv.py"
+start "inserv" cmd /k "cd %CURDIR% && call %CONDAPATH%\Scripts\activate.bat %ENVPATH% && python drivers\inserv.py"
 REM 2 second delay to avoid anaconda yelling at you for accessing the same environment too quickly
 timeout /t 2 >nul
 start "dataserv" cmd /k "cd %CURDIR% && call %CONDAPATH%\Scripts\activate.bat %ENVPATH% && nspyre-dataserv"
