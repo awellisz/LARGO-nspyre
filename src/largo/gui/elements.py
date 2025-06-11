@@ -9,7 +9,7 @@ from nspyre import DataSink
 from pyqtgraph import SpinBox
 from pyqtgraph.Qt import QtWidgets
 
-import template.experiments.odmr
+import largo.experiments.odmr
 
 class ODMRWidget(ExperimentWidget):
     def __init__(self):
@@ -49,7 +49,7 @@ class ODMRWidget(ExperimentWidget):
         }
 
         super().__init__(params_config, 
-                        template.experiments.odmr,
+                        largo.experiments.odmr,
                         'SpinMeasurements',
                         'odmr_sweep',
                         title='ODMR')

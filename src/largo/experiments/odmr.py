@@ -11,7 +11,7 @@ from nspyre import experiment_widget_process_queue
 from nspyre import StreamingList
 from nspyre import nspyre_init_logger
 
-from template.drivers.insmgr import MyInstrumentManager
+from largo.drivers.insmgr import MyInstrumentManager
 
 _HERE = Path(__file__).parent
 _logger = logging.getLogger(__name__)

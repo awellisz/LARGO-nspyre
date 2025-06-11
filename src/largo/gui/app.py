@@ -17,8 +17,8 @@ from nspyre import nspyreApp
 # in order for dynamic reloading of code to work, you must pass the specifc
 # module containing your class to MainWidgetItem, since the python reload()
 # function does not recursively reload modules
-import template.gui.elements
-from template.drivers.insmgr import MyInstrumentManager
+import largo.gui.elements
+from largo.drivers.insmgr import MyInstrumentManager
 
 _HERE = Path(__file__).parent
 
@@ -39,11 +39,11 @@ def main():
         # Create the GUI.
         main_widget = MainWidget(
             {
-                'ODMR': MainWidgetItem(template.gui.elements, 'ODMRWidget', stretch=(1, 1)),
-                'Subsystems': MainWidgetItem(nspyre.gui.widgets.subsystem, 'SubsystemsWidget', args=[insmgr.subs.subsystems], stretch=(1, 1)),
+                'ODMR': MainWidgetItem(largo.gui.elements, 'ODMRWidget', stretch=(1, 1)),
+                # 'Subsystems': MainWidgetItem(nspyre.gui.widgets.subsystem, 'SubsystemsWidget', args=[insmgr.subs.subsystems], stretch=(1, 1)),
                 'Plots': {
                     'FlexLinePlotDemo': MainWidgetItem(
-                        template.gui.elements,
+                        largo.gui.elements,
                         'FlexLinePlotWidgetWithODMRDefaults',
                         stretch=(100, 100),
                     ),
