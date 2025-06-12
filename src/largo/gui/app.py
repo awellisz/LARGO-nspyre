@@ -8,7 +8,7 @@ from pathlib import Path
 import nspyre.gui.widgets.save
 import nspyre.gui.widgets.load
 import nspyre.gui.widgets.flex_line_plot
-import nspyre.gui.widgets.subsystem
+# import nspyre.gui.widgets.subsystem
 from nspyre import MainWidget
 from nspyre import MainWidgetItem
 from nspyre import nspyre_init_logger
@@ -18,7 +18,10 @@ from nspyre import nspyreApp
 # module containing your class to MainWidgetItem, since the python reload()
 # function does not recursively reload modules
 import largo.gui.elements
+import largo.experiments.fsm.fsm_gui as fsmgui
+
 from largo.drivers.insmgr import MyInstrumentManager
+
 
 _HERE = Path(__file__).parent
 
@@ -40,6 +43,10 @@ def main():
         main_widget = MainWidget(
             {
                 'ODMR': MainWidgetItem(largo.gui.elements, 'ODMRWidget', stretch=(1, 1)),
+                'FSM': {
+                    'FSM Scan Exp': MainWidgetItem(fsmgui, 'FSMScanWidget', stretch = (1,1)),
+                    'FSM Scan Image': MainWidgetItem(fsmgui, 'FSMHeatmap', stretch=(1,1))
+                },
                 # 'Subsystems': MainWidgetItem(nspyre.gui.widgets.subsystem, 'SubsystemsWidget', args=[insmgr.subs.subsystems], stretch=(1, 1)),
                 'Plots': {
                     'FlexLinePlotDemo': MainWidgetItem(

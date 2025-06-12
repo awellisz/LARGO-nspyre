@@ -55,7 +55,7 @@ class FakeFSM:
         """
         x, y = self._convert_point(point)
         self.position = {'x': x, 'y': y}
-        logger.info(f"Moved to (x={x}, y={y})")
+        logger.info(f"Moved fsm to (x={x}, y={y})")
 
     def line_scan(self, init_point, final_point, steps, pts_per_step):
         """
@@ -110,3 +110,4 @@ class FakeFSM:
             sigma = np.random.uniform(0.5, 2.0)
             amplitude = np.random.uniform(self.baseline, self.baseline * 5)
             self.blobs.append({'x0': x0, 'y0': y0, 'sigma': sigma, 'amplitude': amplitude})
+            
