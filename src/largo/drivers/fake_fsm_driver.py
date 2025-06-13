@@ -12,11 +12,11 @@ class FakeFSM:
     Simulate a fast-steering mirror (FSM) driver that produces faux photoluminescence maps
     with Gaussian blobs on top of baseline noise.
     """
-    def __init__(self, num_blobs=5, region_size=50, baseline=100, noise_level=0.05):
+    def __init__(self, num_blobs=200, region_size=100e-6, baseline=100, noise_level=0.1):
         """
         Args:
             num_blobs (int): Number of Gaussian emitters (blobs) to simulate.
-            region_size (float): Half-size of square region (in µm) over which blobs are placed.
+            region_size (float): Half-size of square region over which blobs are placed.
             baseline (float): Baseline count level.
             noise_level (float): Relative standard deviation of additive Gaussian noise.
         """
@@ -107,7 +107,7 @@ class FakeFSM:
         for _ in range(self.num_blobs):
             x0 = np.random.uniform(-self.region_size, self.region_size)
             y0 = np.random.uniform(-self.region_size, self.region_size)
-            sigma = np.random.uniform(0.5, 2.0)
+            sigma = np.random.uniform(0.5e-6, 2.0e-6)
             amplitude = np.random.uniform(self.baseline, self.baseline * 5)
             self.blobs.append({'x0': x0, 'y0': y0, 'sigma': sigma, 'amplitude': amplitude})
             
