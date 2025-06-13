@@ -170,6 +170,7 @@ class FSMScanMeasurement:
 
 
 if __name__ == '__main__':
+    # For testing
     with FSMScanMeasurement() as exp:
         exp.fsm_scan(
             dataset='fsm_test',

@@ -5,8 +5,9 @@ from nspyre import ExperimentWidget, HeatMapWidget, DataSink
 from pyqtgraph import SpinBox
 from pyqtgraph.Qt import QtWidgets
 import logging
+import numpy as np
+import time
 
-from pyqtgraph import colormap as pgcm
 
 import largo.experiments.fsm.fsm_scan
 
@@ -92,111 +93,181 @@ class FSMScanWidget(ExperimentWidget):
 
 
 class FSMHeatmap(HeatMapWidget):
-    """
-    Heatmap widget that dynamically displays FSM scan data from a DataSource.
+    """Widget for displaying FSM scan data as a 2D heatmap."""
+    
+    def __init__(self, parent=None):
 
-    Subclasses nspyre's HeatMapWidget and streams in 'raw' frames as they arrive.
-    """
-    def __init__(self, dataset: str = "fsm", parent=None):
-        # default dataset name
-        self.dataset = dataset
+        super().__init__(
+            parent=parent,
+            title='FSM Scan',
+            btm_label='X Position (µm)', 
+            lft_label='Y Position (µm)', 
+        )
+        
+        # Create dataset selection box/button
+        self._create_controls()
+        
+        # Initialize attributes
+        self.sink = None
+        self.current_dataset = None
+        self._is_connecting = False
+        
+        # Set size, scaling, padding
+        # self.setMinimumSize(800, 800) 
+        # self.image_view.view.setAspectLocked(True)
+        self.image_view.view.enableAutoRange()
+        
+        # Scale ticks to microns
+        self.image_view.view.getAxis('bottom').setScale(1e6) 
+        self.image_view.view.getAxis('left').setScale(1e6)   
+        
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding
+        )
+        
+        # Switch to default dataset
+        self.switch_dataset('fsm')
 
-        cmap = pgcm.get('viridis')  
-        super().__init__(parent=parent,
-                         title='FSM Heatmap',
-                         btm_label='X Position',
-                         lft_label='Y Position',
-                         colormap=cmap)
+    def _create_controls(self):
+        """Create and layout the dataset selection controls."""
+        # Create control widgets
+        control_widget = QtWidgets.QWidget()
+        control_layout = QtWidgets.QHBoxLayout()
+        control_layout.setContentsMargins(0, 0, 0, 0)
+        
+        label = QtWidgets.QLabel("Dataset:")
+        control_layout.addWidget(label)
+        
+        self.dataset_input = QtWidgets.QLineEdit("fsm")
+        control_layout.addWidget(self.dataset_input)
+        
+        switch_btn = QtWidgets.QPushButton("Switch Dataset")
+        switch_btn.clicked.connect(self._on_switch_clicked)
+        control_layout.addWidget(switch_btn)
+        
 
-        # add controls for selecting dataset
-        self._add_dataset_controls()
+        control_layout.addStretch()
 
-        # initialize DataSink on default dataset (scaffolding appears even if no data yet)
-        self.setup()
+        control_widget.setLayout(control_layout)
+        
+        # Insert at the top of the main layout
+        self.layout.insertWidget(0, control_widget)
 
-    def _add_dataset_controls(self):
-        """Add a horizontal control bar for dataset input and switch button."""
-        self.ctrl_layout = QtWidgets.QHBoxLayout()
-        self.ds_label = QtWidgets.QLabel("Data Set:")
-        self.ds_edit = QtWidgets.QLineEdit(self.dataset)
-        self.switch_btn = QtWidgets.QPushButton("Switch sink")
-        self.switch_btn.clicked.connect(self._switch_sink)
+    def _on_switch_clicked(self):
+        """Handle Switch Sink button clicks."""
+        new_dataset = self.dataset_input.text().strip()
+        self.switch_dataset(new_dataset)
 
-        self.ctrl_layout.addWidget(self.ds_label)
-        self.ctrl_layout.addWidget(self.ds_edit)
-        self.ctrl_layout.addWidget(self.switch_btn)
-
-        # insert controls at the top of the existing layout
-        # HeatMapWidget exposes its main layout as self.layout
-        self.layout.insertLayout(0, self.ctrl_layout)
-
-    def _switch_sink(self):
-        """Stop any existing sink and switch to the newly entered dataset."""
-        # stop old sink if present
-        if hasattr(self, 'sink') and self.sink:
+    def switch_dataset(self, dataset_name: str):
+        """Switch to a new dataset."""
+        self._is_connecting = True  # Set flag when starting connection
+        
+        # Stop existing sink if any
+        if self.sink is not None:
             try:
                 self.sink.stop()
-                _logger.info(f"Stopped DataSink for '{self.dataset}'")
-            except Exception:
-                _logger.exception("Error stopping previous DataSink")
-            finally:
                 self.sink = None
+            except Exception as e:
+                _logger.error(f"Error stopping previous sink: {e}")
 
-        # update dataset name and restart sink
-        new_ds = self.ds_edit.text().strip()
-        if new_ds:
-            self.dataset = new_ds
-        self.setup()
-
-    def setup(self):
-        """Initialize or reinitialize the DataSink for the current dataset."""
-        # do nothing if already running
-        if hasattr(self, 'sink') and self.sink:
+        if not dataset_name:
+            self.current_dataset = None
+            self._is_connecting = False 
             return
+
+        # Create new sink
         try:
-            self.sink = DataSink(self.dataset)
+            self.sink = DataSink(dataset_name)
             self.sink.start()
-            _logger.info(f"FSMHeatmap connected to dataset '{self.dataset}'")
-        except Exception:
-            _logger.exception(f"Failed to start DataSink for '{self.dataset}'")
+            
+            # Wait for connection (with timeout)
+            start_time = time.time()
+            while not self.sink.is_running and (time.time() - start_time) < 5.0:
+                time.sleep(0.1)
+            
+            if not self.sink.is_running:
+                _logger.warning(f"Timeout waiting for sink to connect to {dataset_name}")
+                self.sink = None
+                self.current_dataset = None
+                self._is_connecting = False 
+                return
+                
+            self.current_dataset = dataset_name
+            _logger.info(f"Switched to dataset: {dataset_name}")
+            
+        except Exception as e:
+            _logger.error(f"Error connecting to dataset {dataset_name}: {e}")
+            self.current_dataset = None
             self.sink = None
+        finally:
+            self._is_connecting = False  # Always clear flag when done
 
-    def update(self):  # runs in UpdateLoop thread
-        """Poll the DataSink; when a full frame is available, update the heatmap."""
-        if not hasattr(self, 'sink') or not self.sink:
+    def set_data(self, x_steps, y_steps, data):
+        """Override set_data to ensure proper scaling and centering"""
+        # Convert position data to meters for display
+        x_steps = np.array(x_steps)
+        y_steps = np.array(y_steps)
+        
+        # Set the data with proper scaling
+        super().set_data(x_steps, y_steps, data)
+        
+        # Auto-range on first data
+        if not hasattr(self, '_first_data_shown'):
+            self.image_view.view.autoRange()
+            x_range = [x_steps.min(), x_steps.max()]
+            y_range = [y_steps.min(), y_steps.max()]
+            self.image_view.view.setRange(xRange=x_range, yRange=y_range, padding=0.1)
+            self._first_data_shown = True
+
+    def update(self):
+        """Update the heatmap with new data."""
+        # Skip updates while connecting
+        if self._is_connecting:
+            return
+            
+        if self.sink is None or not self.sink.is_running:
             return
 
-        # attempt to pop new data without blocking
         try:
-            self.sink.pop(timeout=0)
+            # Try to get new data
+            self.sink.pop(timeout=0.1)
+            
+            # Get the datasets
+            datasets = getattr(self.sink, 'datasets', {})
+            if not datasets:
+                return
+
+            # Get latest frame data
+            raw_data = datasets.get('raw', [])
+            x_steps = datasets.get('xSteps', [])
+            y_steps = datasets.get('ySteps', [])
+
+            # Check if we have valid data arrays
+            if (len(raw_data) == 0 or len(x_steps) == 0 or len(y_steps) == 0):
+                return
+
+            # Get the latest frame
+            latest_frame = raw_data[-1]
+            
+            # Check if frame contains any valid data (not all NaN)
+            if np.all(np.isnan(latest_frame)):
+                return
+                
+            # Update the heatmap
+            self.set_data(x_steps, y_steps, latest_frame)
+
         except TimeoutError:
-            return
-
-        dsets = getattr(self.sink, 'datasets', {}) or {}
-        raw = dsets.get('raw')
-        x_steps = dsets.get('xSteps')
-        y_steps = dsets.get('ySteps')
-
-        # only update if we have a complete frame
-        if raw is None or x_steps is None or y_steps is None:
-            return
-
-        try:
-            frame = raw[-1]
-        except Exception:
-            _logger.exception("Could not retrieve latest raw frame")
-            return
-
-        # pass axes + data to base class for rendering
-        self.set_data(x_steps, y_steps, frame)
+            # No new data available
+            pass
+        except Exception as e:
+            _logger.error(f"Error updating heatmap: {e}")
 
     def teardown(self):
-        """Stop the DataSink when the widget is destroyed or dataset is switched."""
-        if hasattr(self, 'sink') and self.sink:
+        """Clean up resources."""
+        if self.sink is not None:
             try:
                 self.sink.stop()
-                _logger.info(f"DataSink for '{self.dataset}' stopped")
-            except Exception:
-                _logger.exception("Error stopping DataSink in teardown")
-            finally:
                 self.sink = None
+            except Exception as e:
+                _logger.error(f"Error in teardown: {e}")
