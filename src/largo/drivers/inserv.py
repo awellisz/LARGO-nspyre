@@ -19,7 +19,7 @@ nspyre_init_logger(
     logging.INFO,
     log_path=_HERE / '../logs',
     log_path_level=logging.DEBUG,
-    prefix='local_inserv',
+    prefix='inserv',
     file_size=10_000_000,
 )
 
