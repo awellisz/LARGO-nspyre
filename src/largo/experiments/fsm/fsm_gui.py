@@ -221,29 +221,24 @@ class FSMHeatmap(HeatMapWidget):
             self._first_data_shown = True
 
     def update(self):
-        """Update the heatmap with new data."""
-        # Skip updates while connecting
+        """Update the heatmap with new data, accumulating all shots."""
         if self._is_connecting:
             return
-            
+
         if self.sink is None or not self.sink.is_running:
             return
 
         try:
-            # Try to get new data
             self.sink.pop(timeout=0.1)
-            
-            # Get the datasets
             datasets = getattr(self.sink, 'datasets', {})
             if not datasets:
                 return
 
-            # Get latest frame data
-            raw_data = datasets.get('raw', [])
+            # raw_data = datasets.get('raw', [])
+            raw_data = datasets.get('avg', [])
             x_steps = datasets.get('xSteps', [])
             y_steps = datasets.get('ySteps', [])
 
-            # Check if we have valid data arrays
             if (len(raw_data) == 0 or len(x_steps) == 0 or len(y_steps) == 0):
                 return
 
@@ -258,7 +253,6 @@ class FSMHeatmap(HeatMapWidget):
             self.set_data(x_steps, y_steps, latest_frame)
 
         except TimeoutError:
-            # No new data available
             pass
         except Exception as e:
             _logger.error(f"Error updating heatmap: {e}")

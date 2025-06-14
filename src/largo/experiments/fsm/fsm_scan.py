@@ -99,6 +99,10 @@ class FSMScanMeasurement:
             if scan_rate > 200:
                 _logger.warning("Scan rate > 200 Hz, aborting scan.")
                 return
+            
+            # initialize running average frame
+            running_avg = np.full((y_num_points, x_num_points), np.nan)
+            avg_sweeps.append(running_avg)
 
             # run shots
             for s in range(shots):
@@ -106,7 +110,6 @@ class FSMScanMeasurement:
 
                 # initialize empty frames
                 raw_sweeps.append(np.full((y_num_points, x_num_points), np.nan))
-                avg_sweeps.append(np.full((y_num_points, x_num_points), np.nan))
 
                 for j, y in enumerate(y_steps):
                     # snake: even rows L->R, odd rows R->L
@@ -131,9 +134,12 @@ class FSMScanMeasurement:
                     raw_sweeps.updated_item(-1)
 
                     # update running average and notify
-                    current_avg = avg_sweeps[-1]
-                    current_avg[j, :] = (current_avg[j, :] * s + line_data) / (s + 1)
-                    avg_sweeps.updated_item(-1)
+                    prev_avg = avg_sweeps[0][j, :]
+                    # If this is the first shot, prev_avg is nan, so treat as 0
+                    valid_prev = np.nan_to_num(prev_avg, nan=0.0)
+                    valid_count = s if not np.isnan(prev_avg).all() else 0
+                    avg_sweeps[0][j, :] = (valid_prev * valid_count + line_data) / (valid_count + 1)
+                    avg_sweeps.updated_item(0)
 
                     # push to DataSource
                     fsm_scan_data.push({
